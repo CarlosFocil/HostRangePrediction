@@ -1,34 +1,49 @@
 import pickle
+import os
+import logging
+from flask import Flask, request, jsonify
 
-from flask import Flask
-from flask import request
-from flask import jsonify
+# Configuration
+model_file = os.environ.get('MODEL_FILE', 'model_mi=0.12_depth=None_min_samples_leaf=5.bin')
+port = int(os.environ.get('PORT', 9696))
 
-model_file = 'model_mi=0.12_depth=None_min_samples_leaf=5.bin'
+logging.basicConfig(level=logging.INFO)
 
-with open(model_file,'rb') as f_in:
-    dv,model = pickle.load(f_in)
+# Load model
+try:
+    with open(model_file, 'rb') as f_in:
+        dv, model = pickle.load(f_in)
+    logging.info(f"Model {model_file} loaded successfully. Ready to recieve requests and make predictions.")
+except FileNotFoundError:
+    logging.error(f"Model file {model_file} not found.")
+    exit(1)
 
 app = Flask('strain-classification')
 
 @app.route('/predict_host_range', methods=['POST'])
 def predict_host_range():
-    strain_profile=request.get_json()
+    """
+    Predicts the host range of a Salmonella strain based on its nutrient-utilization profile.
+    """
+    try:
+        strain_profile = request.get_json()
 
-    X = dv.transform([strain_profile])
-    y_pred = model.predict_proba(X)[0, 1]
-    
-    if y_pred >= 0.5:
-        prediction = 'Generalist'
-    else:
-        prediction = 'Specialist'
-    
-    result = {
-        'Generalist probability':float(y_pred),
-        'Host range': str(prediction)
-    }
+        if not strain_profile:
+            raise ValueError("No input data provided")
 
-    return jsonify(result)
+        X = dv.transform([strain_profile])
+        y_pred = model.predict_proba(X)[0, 1]
 
-if __name__=="__main__":
-    app.run(debug=True,host='0.0.0.0',port=9696)
+        prediction = 'Generalist' if y_pred >= 0.5 else 'Specialist'
+        result = {
+            'Generalist probability': float(y_pred),
+            'Host range': prediction
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"Error during prediction: {e}")
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=port)
