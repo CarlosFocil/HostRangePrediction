@@ -6,3 +6,6 @@ Capstone_1.ipynb
 
 # Data
 full_combined_dataset.csv
+
+# Helper python files
+custom_train_functions.py
