@@ -12,6 +12,7 @@ from sklearn.feature_selection import VarianceThreshold, mutual_info_classif
 from sklearn.metrics import make_scorer, roc_auc_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import Binarizer
 
+from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
@@ -139,12 +140,12 @@ def get_vectorized_training_data(df: pd.DataFrame, features: list) -> Tuple[Dict
 
 def hyperparameter_tuning_cv(df_train, y_train, numerical_features, model_type, param_grid, folds=5, metric=roc_auc_score, selection_threshold=0.01, rand_state=11):
     """
-    Performs hyperparameter tuning with cross-validation for Decision Tree or Random Forest models.
+    Performs hyperparameter tuning with cross-validation for Decision Tree, Random Forest, or Logistic Regression models.
 
     This function conducts exhaustive hyperparameter tuning using cross-validation. It supports 
-    Decision Tree and Random Forest models. Feature selection based on a variance threshold is 
-    applied within each fold of the cross-validation. The function returns the best score, 
-    standard deviation of scores, and the best hyperparameters found.
+    Decision Tree, Random Forest, and Logistic Regression models. Feature selection based on a 
+    variance threshold is applied within each fold of the cross-validation. The function returns 
+    the best score, standard deviation of scores, and the best hyperparameters found.
 
     Parameters
     ----------
@@ -155,7 +156,7 @@ def hyperparameter_tuning_cv(df_train, y_train, numerical_features, model_type, 
     numerical_features : list
         The list of numerical feature names to be used for training.
     model_type : str
-        The type of model to be used for training ('decision_tree' or 'random_forest').
+        The type of model to be used for training ('decision_tree', 'random_forest', or 'logistic_regression').
     param_grid : dict
         A dictionary defining the grid of hyperparameters to be tested.
     folds : int, optional
@@ -195,7 +196,7 @@ def hyperparameter_tuning_cv(df_train, y_train, numerical_features, model_type, 
             # Select features based on variance threshold
             selected_features = filter_and_select_features(df_train_fold, numerical_features, threshold=selection_threshold)
 
-            dv,X_train_fold = get_vectorized_training_data(df_train_fold,selected_features)
+            dv, X_train_fold = get_vectorized_training_data(df_train_fold, selected_features)
 
             val_dicts = df_val_fold[selected_features].to_dict(orient='records')
             X_val_fold = dv.transform(val_dicts)
@@ -205,15 +206,16 @@ def hyperparameter_tuning_cv(df_train, y_train, numerical_features, model_type, 
                 model = DecisionTreeClassifier(**params, random_state=rand_state)
             elif model_type == 'random_forest':
                 model = RandomForestClassifier(**params, random_state=rand_state)
+            elif model_type == 'logistic_regression':
+                model = LogisticRegression(**params, random_state=rand_state, max_iter=1000)
             else:
-                raise ValueError("Invalid model type. Choose 'decision_tree' or 'random_forest'.")
+                raise ValueError("Invalid model type. Choose 'decision_tree', 'random_forest', or 'logistic_regression'.")
 
-            # Train mthe model
-            model.set_params(**params)
+            # Train the model
             model.fit(X_train_fold, y_train_fold)
 
-            # Evaluate model
-            y_pred = model.predict(X_val_fold)
+            # Evaluate the model
+            y_pred = model.predict_proba(X_val_fold)[:, 1] if model_type == 'logistic_regression' else model.predict(X_val_fold)
             score = metric(y_val_fold, y_pred)
             fold_scores.append(score)
 
@@ -227,42 +229,48 @@ def hyperparameter_tuning_cv(df_train, y_train, numerical_features, model_type, 
 
     return best_score, stdev_score, best_params
 
-def train_final_model(df_train: pd.DataFrame, y_train: np.ndarray, features: list, model_type: str, best_parameters: Dict[str, any],rand_state: int=11) -> BaseEstimator:
+def train_final_model_lr(df_train, y_train, features, model_type, best_parameters, rand_state=11):
     """
     Trains a machine learning model using the best parameters found from hyperparameter tuning.
 
-    This function trains either a Decision Tree or Random Forest model using the best parameters obtained 
+    This function trains a Decision Tree, Random Forest, or Logistic Regression model using the best parameters obtained 
     from a hyperparameter tuning process. It returns the trained model.
 
     Parameters
     ----------
-    - df_train (pd.DataFrame): The DataFrame containing the training data.
-    - y_train (pd.Series): The target variable for the training data.
-    - features (list): The list of feature names to be used for training.
-    - model_type (str): The type of model to be trained ('decision_tree' or 'random_forest').
-    - best_parameters (Dict[str, any]): A dictionary of the best hyperparameters for the model.
+    df_train : pd.DataFrame
+        The DataFrame containing the training data.
+    y_train : np.ndarray
+        The target variable for the training data.
+    features : list
+        The list of feature names to be used for training.
+    model_type : str
+        The type of model to be trained ('decision_tree', 'random_forest', or 'logistic_regression').
+    best_parameters : Dict[str, any]
+        A dictionary of the best hyperparameters for the model.
+    rand_state : int
+        The random state for reproducibility.
 
     Returns
     -------
-    - Tuple[BaseEstimator, DictVectorizer]: A tuple containing the trained machine learning model and DictVectorizer object.
+    Tuple[BaseEstimator, DictVectorizer]
+        A tuple containing the trained machine learning model and DictVectorizer object.
     """
-    # Vectorize the training data
     dv, X_train_vect = get_vectorized_training_data(df_train, features)
 
-    # Instantiate the model with the best parameters
     if model_type == 'decision_tree':
-        model = DecisionTreeClassifier(**best_parameters,random_state=rand_state)
+        model = DecisionTreeClassifier(**best_parameters, random_state=rand_state)
     elif model_type == 'random_forest':
-        model = RandomForestClassifier(**best_parameters,random_state=rand_state)
+        model = RandomForestClassifier(**best_parameters, random_state=rand_state)
+    elif model_type == 'logistic_regression':
+        model = LogisticRegression(**best_parameters, random_state=rand_state, max_iter=1000)
     else:
-        raise ValueError("Invalid model type. Choose 'decision_tree' or 'random_forest'.")
+        raise ValueError("Invalid model type. Choose 'decision_tree', 'random_forest', or 'logistic_regression'.")
 
-    # Train the model
     model.fit(X_train_vect, y_train)
+    return model, dv
 
-    return model,dv
-
-def test_final_model(model: BaseEstimator, df_test: pd.DataFrame, y_test: np.ndarray, dv: DictVectorizer, features: list, threshold: float = 0.5) -> Dict[str, float]:
+def test_final_model(model, df_test, y_test, dv, features, threshold=0.5):
     """
     Tests a trained machine learning model on a test dataset and evaluates its performance using various metrics.
 
@@ -270,30 +278,27 @@ def test_final_model(model: BaseEstimator, df_test: pd.DataFrame, y_test: np.nda
     the ROC AUC score, precision, recall, and F1 score to evaluate the model's performance.
 
     Parameters:
-    - model (BaseEstimator): The trained machine learning model.
-    - df_test (pd.DataFrame): The DataFrame containing the test data.
-    - y_test (pd.Series): The actual target variable values for the test data.
-    - dv (DictVectorizer): The DictVectorizer used to vectorize the training data, for consistent transformation of test data.
-    - features (list): The list of feature names to be used for testing.
-    - threshold (float, optional): The threshold for converting probabilities to binary class predictions. Default is 0.5.
+    model : BaseEstimator
+        The trained machine learning model.
+    df_test : pd.DataFrame
+        The DataFrame containing the test data.
+    y_test : np.ndarray
+        The actual target variable values for the test data.
+    dv : DictVectorizer
+        The DictVectorizer used to vectorize the training data, for consistent transformation of test data.
+    features : list
+        The list of feature names to be used for testing.
+    threshold : float, optional
+        The threshold for converting probabilities to binary class predictions (default is 0.5).
 
     Returns:
-    - Dict[str, float]: A dictionary containing the ROC AUC, precision, recall, and F1 score of the model on the test dataset.
+    Dict[str, float]
+        A dictionary containing the ROC AUC, precision, recall, and F1 score of the model on the test dataset.
     """
-    # Vectorize the test data
     test_dicts = df_test[features].to_dict(orient='records')
     X_test = dv.transform(test_dicts)
 
-    # Make predictions
     y_pred_proba = model.predict_proba(X_test)[:, 1]
-    y_pred = Binarizer(threshold=threshold).transform([y_pred_proba])[0]
 
-    # Calculate metrics
-    metrics = {
-        'roc_auc': roc_auc_score(y_test, y_pred_proba),
-        'precision': precision_score(y_test, y_pred),
-        'recall': recall_score(y_test, y_pred),
-        'f1_score': f1_score(y_test, y_pred)
-    }
-
-    return metrics
+    roc_auc = roc_auc_score(y_test,y_pred_proba)
+    return roc_auc

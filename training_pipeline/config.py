@@ -10,6 +10,7 @@ PARAMETERS = {
 }
 
 hyperparam_grid = {
-        'decision_tree': {'max_depth': [None, 2, 4, 6, 8, 10, 12], 'min_samples_leaf': [1, 2, 3, 4, 5]},
-        'random_forest': {'n_estimators': [10, 50, 100, 200], 'max_depth': [3, 5, 10], 'min_samples_split': [2, 5, 10]}
+        'logistic_regression':{'C':[1,0.9,0.8,0.7,0.6,0.4,0.2]},
+        'decision_tree': {'max_depth': [None, 2, 4, 6, 8], 'min_samples_leaf': [1, 2, 3, 4]},
+        'random_forest': {'n_estimators': [10, 50, 100], 'max_depth': [3, 5, 10], 'min_samples_split': [2, 5, 10]}
     }

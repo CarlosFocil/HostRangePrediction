@@ -16,8 +16,8 @@ def main():
     threshold=PARAMETERS['threshold']
     save_model = PARAMETERS['save_model']
     model_version=PARAMETERS['model_version']
-    param_grid = hyperparam_grid[model_type]
     output_path = PARAMETERS['output_path']
+    param_grid = hyperparam_grid[model_type]
 
     logging.info('Loading data')
     # Load and preprocess data
@@ -30,9 +30,6 @@ def main():
     y_train = df_train['host_range_encoded'].values
     y_test = df_test['host_range_encoded'].values
 
-    # Select features for training
-    selected_features = filter_and_select_features(df_train, numerical, method=feature_selection_method,threshold=threshold)
-
     # Hyperparameter tuning and cross validation
     logging.info(f'Performing hyperparameter tuning and cross-validation on {model_type}')
     best_score,std_score,best_params = hyperparameter_tuning_cv(df_train,y_train,numerical,model_type,param_grid=param_grid,metric=roc_auc_score)
@@ -41,7 +38,10 @@ def main():
 
     # Train final model based on best hyperparameters   
     logging.info('Training and testing final model') 
-    final_model,dv = train_final_model(df_train, y_train, selected_features, model_type, best_parameters=best_params)
+    
+    # Select features for training
+    selected_features = filter_and_select_features(df_train, numerical, method=feature_selection_method,threshold=threshold)
+    final_model,dv = train_final_model_lr(df_train, y_train, selected_features, model_type, best_parameters=best_params)
 
     # Test final model
     final_metrics = test_final_model(final_model, df_test, y_test, dv, selected_features)
