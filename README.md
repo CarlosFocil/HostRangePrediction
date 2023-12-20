@@ -1,7 +1,10 @@
-# Salmonella Host Colonization Rate Classifier
+# Salmonella Host Colonization Range Classifier
 
 ## Overview
-This repository contains a machine learning project focused on classifying the host colonization rates for various strains of Salmonella. The project is structured into two primary components:
+This repository contains a machine learning project focused on classifying the host colonization range for various Salmonella strains. 
+The project is based on the data from the following paper from Seif et al: https://doi.org/10.1038/s41467-018-06112-5. 
+
+The project is structured into two primary components:
 
 1. **Training Pipeline**: Automates the process of model training, including cross-validation, hyperparameter tuning, and model evaluation.
 2. **Model Serving**: Facilitates model deployment through a Flask-based API, containerized using Docker.
