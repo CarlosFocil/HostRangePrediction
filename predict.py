@@ -4,7 +4,7 @@ import logging
 from flask import Flask, request, jsonify
 
 # Configuration
-model_file = os.environ.get('MODEL_FILE', 'model_mi=0.12_depth=None_min_samples_leaf=5.bin')
+model_file = os.environ.get('MODEL_FILE', 'decision_tree_HostRangeClassifier_v1.bin')
 port = int(os.environ.get('PORT', 9696))
 
 logging.basicConfig(level=logging.INFO)
