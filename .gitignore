@@ -6,6 +6,10 @@ Capstone_1.ipynb
 
 # Data
 full_combined_dataset.csv
+Salmonella_amr_data.csv
+Salmonella_genome_data.csv
+Untitled.ipynb
 
 # Helper python files
 custom_train_functions.py
+backup.py
