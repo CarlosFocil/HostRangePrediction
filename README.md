@@ -57,14 +57,15 @@ python train_host-range_classifier.py
 This will automatically handle cross-validation, hyperparameter tuning and will select the best parameters. The model will be saved at the 'trained_models' directory.
 
 #### Config file explanation (training pipeline)
-data_path: Path to data used for model training.
-model_type: The type of model to train. Options are 'decision_tree', 'random_forest' and 'logistic_regression'.
-feature_selection_method*: Method for selecting features. Options are 'variance' or 'mutual_information'.
-threshold*: Threshold for slecting features based on the specified method.
-metric*: roc_auc
-model_version: Version of the final trained model. Choose the name you prefer.
-save_model: Option to save the final model with pickle.
-output_path: Path to the directory for the saved model.
-hyperparam_grid: Dictionary of parameters to test in the hyperparameter tuning and cross-validation step.
 
-Parameters marked with '*' are still in development and might not work properly For now please use the default ones.
+- `data_path`: Path to data used for model training.
+- `model_type`: The type of model to train. Options are 'decision_tree', 'random_forest', and 'logistic_regression'.
+- `feature_selection_method*`: Method for selecting features. Options are 'variance' or 'mutual_information'.
+- `threshold*`: Threshold for selecting features based on the specified method.
+- `metric*`: `roc_auc`
+- `model_version`: Version of the final trained model. Choose the name you prefer.
+- `save_model`: Option to save the final model with pickle.
+- `output_path`: Path to the directory for the saved model.
+- `hyperparam_grid`: Dictionary of parameters to test in the hyperparameter tuning and cross-validation step.
+
+\* Parameters marked with '*' are still in development and might not work properly. For now, please use the default ones.
